@@ -1,0 +1,79 @@
+-- HTMLServe AppleScript Application
+-- Handles file association and drag-and-drop for HTMLServe
+
+property htmlserveExecutable : ""
+
+on run
+    -- Get the path to our executable
+    set appPath to path to me as string
+    set htmlserveExecutable to (POSIX path of appPath) & "Contents/Resources/htmlserve"
+
+    -- Log to file
+    do shell script "echo '" & (current date) & " - HTMLServe AppleScript launched without files' >> ~/Library/Logs/HTMLServe.log"
+
+    -- Show usage dialog
+    display dialog "HTMLServe - HTML File Server
+
+To use:
+• Drag HTML files onto this app icon
+• Right-click HTML files → Open With → HTMLServe
+• Double-click HTML files (if set as default)
+• Command line: htmlserve file.html
+
+The app is now ready to handle HTML files." buttons {"OK"} default button "OK" with icon note
+
+    -- Keep running to handle future file drops
+    do shell script "echo '" & (current date) & " - HTMLServe ready for file operations' >> ~/Library/Logs/HTMLServe.log"
+end run
+
+on open droppedFiles
+    -- Get the path to our executable
+    set appPath to path to me as string
+    set htmlserveExecutable to (POSIX path of appPath) & "Contents/Resources/htmlserve"
+
+    -- Log the file drop
+    do shell script "echo '" & (current date) & " - HTMLServe received " & (count of droppedFiles) & " files' >> ~/Library/Logs/HTMLServe.log"
+
+    -- Process each dropped file
+    repeat with aFile in droppedFiles
+        set filePath to POSIX path of aFile
+
+        -- Log the file being processed
+        do shell script "echo '" & (current date) & " - Processing file: " & filePath & "' >> ~/Library/Logs/HTMLServe.log"
+
+        -- Check if it's an HTML file
+        if filePath ends with ".html" or filePath ends with ".htm" then
+            try
+                -- Start HTMLServe with this file
+                do shell script "echo '" & (current date) & " - Starting HTMLServe for: " & filePath & "' >> ~/Library/Logs/HTMLServe.log"
+                do shell script quoted form of htmlserveExecutable & " " & quoted form of filePath & " >> ~/Library/Logs/HTMLServe.log 2>&1 &"
+
+                -- Log success
+                do shell script "echo '" & (current date) & " - HTMLServe started successfully' >> ~/Library/Logs/HTMLServe.log"
+
+                -- Exit after handling the first HTML file
+                return
+
+            on error errorMessage
+                -- Log error
+                do shell script "echo '" & (current date) & " - Error starting HTMLServe: " & errorMessage & "' >> ~/Library/Logs/HTMLServe.log"
+                display dialog "Error starting HTMLServe with file: " & filePath & "
+
+Error: " & errorMessage buttons {"OK"} default button "OK" with icon stop
+            end try
+        else
+            -- Log non-HTML file
+            do shell script "echo '" & (current date) & " - Skipping non-HTML file: " & filePath & "' >> ~/Library/Logs/HTMLServe.log"
+        end if
+    end repeat
+
+    -- If we get here, no HTML files were found
+    do shell script "echo '" & (current date) & " - No HTML files found in dropped files' >> ~/Library/Logs/HTMLServe.log"
+    display dialog "Please drop HTML files (.html or .htm) onto this app." buttons {"OK"} default button "OK" with icon stop
+end open
+
+-- Handle when the app is asked to open a document (file association)
+on open location this_URL
+    -- This handles URL schemes if needed
+    do shell script "echo '" & (current date) & " - HTMLServe received URL: " & this_URL & "' >> ~/Library/Logs/HTMLServe.log"
+end open location

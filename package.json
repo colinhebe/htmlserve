@@ -1,44 +1,40 @@
 {
     "name": "HTMLserve",
     "version": "1.0.0",
-    "main": "main.js",
+    "main": "cli.js",
     "scripts": {
-        "start": "electron .",
+        "start": "node cli.js",
         "test": "echo \"Error: no test specified\" && exit 1",
-        "pack": "electron-builder --dir",
-        "dist": "electron-builder",
-        "dist-local": "electron-builder --config .electron-builder.config.json"
+        "build": "./build-app.sh",
+        "build-cli": "pkg cli.js --target node18-macos-x64 --output dist/htmlserve"
     },
-    "keywords": [],
+    "keywords": [
+        "html",
+        "server",
+        "preview",
+        "local",
+        "development"
+    ],
     "author": "COLIN",
     "license": "ISC",
     "description": "Preview local HTML files by double-clicking, with automatic HTTP server.",
     "dependencies": {
         "express": "^5.1.0",
-        "get-port": "^7.1.0",
         "open": "^10.2.0"
     },
     "devDependencies": {
-        "electron": "^37.2.1",
-        "electron-builder": "^26.0.12"
+        "pkg": "^5.8.1"
     },
-    "build": {
-        "productName": "HTMLServe",
-        "appId": "com.lvjiaxi.htmlserve",
-        "icon": "build/icon.icns",
-        "mac": {
-            "category": "public.app-category.developer-tools",
-            "target": "dmg",
-            "fileAssociations": [
-                {
-                    "ext": [
-                        "html",
-                        "htm"
-                    ],
-                    "name": "HTML Document",
-                    "role": "Viewer"
-                }
-            ]
-        }
+    "pkg": {
+        "scripts": [
+            "cli.js"
+        ],
+        "assets": [
+            "node_modules/express/**/*",
+            "node_modules/open/**/*"
+        ],
+        "targets": [
+            "node18-macos-x64"
+        ]
     }
 }
