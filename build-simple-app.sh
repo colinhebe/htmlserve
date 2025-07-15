@@ -19,20 +19,33 @@ echo "🔨 Building CLI executable..."
 npm run build-cli
 
 # Use the compiled AppleScript app as base
-echo "📋 Using AppleScript application as base..."
+echo "📋 Compiling AppleScript application..."
+osacompile -o HTMLServe_AS.app HTMLServe.applescript
 cp -r HTMLServe_AS.app "$APP_BUNDLE"
 
 # Copy executable to Resources
 echo "📋 Copying HTMLServe executable..."
 cp dist/htmlserve "$APP_BUNDLE/Contents/Resources/htmlserve"
 chmod +x "$APP_BUNDLE/Contents/Resources/htmlserve"
-# Copy icon
-if [ -f "build/icon.icns" ]; then
-    cp build/icon.icns "$APP_BUNDLE/Contents/Resources/"
+
+# Copy icon and update Info.plist
+echo "🎨 Setting up custom icon..."
+if [ -f "assets/icon.icns" ]; then
+    cp assets/icon.icns "$APP_BUNDLE/Contents/Resources/"
+    # Update Info.plist to use custom icon
+    /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile icon" "$APP_BUNDLE/Contents/Info.plist"
+    echo "✅ Custom icon set to: icon.icns"
 elif [ -f "assets/htmlserve-icon.png" ]; then
     # If no .icns file available, use PNG (not best practice but works)
     cp assets/htmlserve-icon.png "$APP_BUNDLE/Contents/Resources/icon.png"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile icon.png" "$APP_BUNDLE/Contents/Info.plist"
+    echo "✅ Icon set to: icon.png"
+else
+    echo "⚠️  No custom icon found, using default droplet icon"
 fi
+
+# Clean up temporary AppleScript app
+rm -rf HTMLServe_AS.app
 
 echo "✅ AppleScript app bundle created successfully!"
 echo " Location: $APP_BUNDLE"
