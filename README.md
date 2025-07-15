@@ -14,7 +14,7 @@
 
 ## Installation
 
-Download the `.dmg` release from the [Releases](https://github.com/YOUR_REPO_URL/releases) page, drag `HTMLServe` to your Applications folder, and set it as the default app for `.html` files.
+Download the `.dmg` release from the [Releases](https://github.com/colinhebe/htmlserve/releases) page, drag `HTMLServe` to your Applications folder, and set it as the default app for `.html` files.
 
 ## Usage
 
