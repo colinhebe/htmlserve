@@ -30,6 +30,11 @@ This avoids browser restrictions like CORS or `file://` limitations.
 - 🖥 macOS — currently supported
 - 🪟 Windows — coming soon
 
+## TODO
+
+- [ ] Support notarization for macOS distribution
+- [ ] Enable drag-and-drop of .html files onto the app icon to open and serve
+
 ## License
 
 MIT
