@@ -60,7 +60,7 @@ echo "🔒 Applying enhanced entitlements..."
 if [ -f "entitlements.plist" ]; then
     # Remove quarantine from the entitlements file first
     xattr -d com.apple.quarantine entitlements.plist 2>/dev/null || true
-    
+
     # Re-sign the app with entitlements to give it elevated privileges
     codesign --force --deep --sign - --entitlements entitlements.plist "$APP_BUNDLE" 2>/dev/null || {
         echo "⚠️  Code signing failed, but app should still work"

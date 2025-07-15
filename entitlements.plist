@@ -11,21 +11,21 @@
     <true/>
     <key>com.apple.security.files.bookmarks.document-scope</key>
     <true/>
-    
+
     <!-- Network access -->
     <key>com.apple.security.network.server</key>
     <true/>
     <key>com.apple.security.network.client</key>
     <true/>
-    
+
     <!-- Automation -->
     <key>com.apple.security.automation.apple-events</key>
     <true/>
-    
+
     <!-- Allow reading any file without sandbox restrictions -->
     <key>com.apple.security.app-sandbox</key>
     <false/>
-    
+
     <!-- Temporary exception for all file access -->
     <key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
     <array>
@@ -33,7 +33,7 @@
         <string>/Users</string>
         <string>/Volumes</string>
     </array>
-    
+
     <!-- Full disk access -->
     <key>com.apple.security.temporary-exception.files.home-relative-path.read-write</key>
     <array>

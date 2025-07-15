@@ -46,30 +46,32 @@ async function serveAndOpen(filePath) {
         const expressApp = express()
 
         // Standard static file serving with enhanced permissions
-        expressApp.use(express.static(folder, {
-            dotfiles: 'allow',
-            etag: true,
-            extensions: ['html', 'htm'],
-            fallthrough: true,
-            immutable: false,
-            index: false,
-            lastModified: true,
-            maxAge: 0,
-            redirect: false,
-            setHeaders: (res, path, stat) => {
-                // Set CORS headers for local development
-                res.set('Access-Control-Allow-Origin', '*');
-                res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-                res.set('Access-Control-Allow-Headers', 'Content-Type');
-            }
-        }))
+        expressApp.use(
+            express.static(folder, {
+                dotfiles: "allow",
+                etag: true,
+                extensions: ["html", "htm"],
+                fallthrough: true,
+                immutable: false,
+                index: false,
+                lastModified: true,
+                maxAge: 0,
+                redirect: false,
+                setHeaders: (res, path, stat) => {
+                    // Set CORS headers for local development
+                    res.set("Access-Control-Allow-Origin", "*")
+                    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+                    res.set("Access-Control-Allow-Headers", "Content-Type")
+                },
+            })
+        )
 
         // Custom handler for special endpoints
         expressApp.use((req, res, next) => {
-            if (req.path.startsWith('/__htmlserve_')) {
+            if (req.path.startsWith("/__htmlserve_")) {
                 return next()
             }
-            
+
             // If we reach here, the static handler didn't find the file
             res.status(404).send(`File not found: ${req.path}`)
         })
@@ -189,9 +191,10 @@ async function serveAndOpen(filePath) {
             res.sendStatus(200)
         })
 
-        // Heartbeat timeout detection - only start after page is loaded
+        // Enhanced heartbeat timeout detection - only start after page is loaded
         const heartbeatTimeout = setInterval(() => {
-            if (pageLoaded && Date.now() - lastHeartbeat > 300000) {
+            if (pageLoaded && Date.now() - lastHeartbeat > 8000) {
+                // Reduced from 15000 to 8000
                 console.log("[HTMLServe] Heartbeat timeout, shutting down server...")
                 clearInterval(heartbeatTimeout)
                 if (server) {
@@ -201,7 +204,21 @@ async function serveAndOpen(filePath) {
                     })
                 }
             }
-        }, 5000)
+        }, 3000) // Check more frequently
+
+        // Additional safety: Force exit after 5 minutes regardless
+        const forceExitTimeout = setTimeout(() => {
+            console.log("[HTMLServe] Force exit after 5 minutes timeout...")
+            process.exit(0)
+        }, 5 * 60 * 1000) // 5 minutes
+
+        // Clear the force exit timeout if we exit normally
+        const originalExit = process.exit
+        process.exit = function (code) {
+            clearTimeout(forceExitTimeout)
+            clearInterval(heartbeatTimeout)
+            originalExit.call(process, code)
+        }
 
         // Start server
         server = expressApp.listen(port, async () => {
