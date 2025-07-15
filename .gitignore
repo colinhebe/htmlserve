@@ -1,0 +1,33 @@
+.electron-builder.config.json
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+
+# Build artifacts
+dist/
+out/
+*.tgz
+
+# macOS extended attributes
+.AppleDouble
+.LSOverride
+
+# IDE / Editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Environment files
+.env
+.env.*.local
