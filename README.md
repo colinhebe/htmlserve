@@ -98,6 +98,8 @@ duti -s com.lvjiaxi.htmlserve public.html all
 - **File Association**: Built-in macOS file association support
 - **Auto-exit**: Automatically closes when HTML page is closed
 - **Drag & Drop**: Supports dragging files onto app icon
+- **No Background Running**: App properly exits after completing tasks
+- **Enhanced Permissions**: Better handling of quarantined and protected files
 - **Cross-platform CLI**: Works on all platforms via command line
 
 ## File Structure
@@ -134,6 +136,27 @@ On macOS, the first run might require allowing execution in "System Preferences"
 # View App runtime logs
 tail -f ~/Library/Logs/HTMLServe.log
 ```
+
+### 5. Quarantine and Permission Issues
+HTMLServe automatically handles macOS quarantine attributes for downloaded files:
+
+- **Automatic quarantine removal**: When accessing quarantined files, HTMLServe will automatically attempt to remove the `com.apple.quarantine` attribute
+- **Transparent handling**: No user intervention required for most downloaded files
+- **Fallback**: If automatic removal fails, you'll see a clear error message
+
+For persistent permission issues:
+```bash
+# Check file permissions
+ls -la path/to/your/file
+
+# Check quarantine attributes
+xattr -l path/to/your/file
+
+# Manual quarantine removal (if needed)
+xattr -d com.apple.quarantine path/to/your/file
+```
+
+**Note**: HTMLServe can only serve files that your user account has read access to. Files in protected system directories may still require manual permission changes.
 
 ## Further Optimization
 

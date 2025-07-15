@@ -22,8 +22,11 @@ To use:
 
 The app is now ready to handle HTML files." buttons {"OK"} default button "OK" with icon note
 
-    -- Keep running to handle future file drops
-    do shell script "echo '" & (current date) & " - HTMLServe ready for file operations' >> ~/Library/Logs/HTMLServe.log"
+    -- Log completion and quit immediately
+    do shell script "echo '" & (current date) & " - HTMLServe dialog shown, exiting' >> ~/Library/Logs/HTMLServe.log"
+    
+    -- Explicitly quit to prevent background running
+    tell me to quit
 end run
 
 on open droppedFiles
@@ -52,6 +55,7 @@ on open droppedFiles
                 do shell script "echo '" & (current date) & " - HTMLServe started successfully' >> ~/Library/Logs/HTMLServe.log"
 
                 -- Exit after handling the first HTML file
+                tell me to quit
                 return
 
             on error errorMessage
@@ -70,6 +74,9 @@ Error: " & errorMessage buttons {"OK"} default button "OK" with icon stop
     -- If we get here, no HTML files were found
     do shell script "echo '" & (current date) & " - No HTML files found in dropped files' >> ~/Library/Logs/HTMLServe.log"
     display dialog "Please drop HTML files (.html or .htm) onto this app." buttons {"OK"} default button "OK" with icon stop
+    
+    -- Quit after showing the error
+    tell me to quit
 end open
 
 -- Handle when the app is asked to open a document (file association)

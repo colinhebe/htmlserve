@@ -9,45 +9,73 @@ let server = null;
 
 async function serveAndOpen(filePath) {
     try {
-        const absPath = path.resolve(filePath);
+        const absPath = path.resolve(filePath)
 
         // Check if file exists
         if (!fs.existsSync(absPath)) {
-            console.error(`Error: File not found: ${absPath}`);
-            process.exit(1);
+            console.error(`Error: File not found: ${absPath}`)
+            process.exit(1)
         }
 
         // Check if it's an HTML file
-        if (!absPath.toLowerCase().endsWith('.html') && !absPath.toLowerCase().endsWith('.htm')) {
-            console.error(`Error: Not an HTML file: ${absPath}`);
-            process.exit(1);
+        if (!absPath.toLowerCase().endsWith(".html") && !absPath.toLowerCase().endsWith(".htm")) {
+            console.error(`Error: Not an HTML file: ${absPath}`)
+            process.exit(1)
         }
 
-        const folder = path.dirname(absPath);
-        const filename = path.basename(absPath);
+        const folder = path.dirname(absPath)
+        const filename = path.basename(absPath)
 
-        console.log(`[HTMLServe] Serving file: ${absPath}`);
+        console.log(`[HTMLServe] Serving file: ${absPath}`)
 
         // Get available port (simplified version)
         const getAvailablePort = () => {
             return new Promise((resolve) => {
-                const net = require('net');
-                const server = net.createServer();
+                const net = require("net")
+                const server = net.createServer()
                 server.listen(0, () => {
-                    const port = server.address().port;
-                    server.close(() => resolve(port));
-                });
-            });
-        };
+                    const port = server.address().port
+                    server.close(() => resolve(port))
+                })
+            })
+        }
 
-        const port = await getAvailablePort();
+        const port = await getAvailablePort()
 
         // Create Express application
-        const expressApp = express();
-        expressApp.use(express.static(folder));
+        const expressApp = express()
+
+        // Standard static file serving with enhanced permissions
+        expressApp.use(express.static(folder, {
+            dotfiles: 'allow',
+            etag: true,
+            extensions: ['html', 'htm'],
+            fallthrough: true,
+            immutable: false,
+            index: false,
+            lastModified: true,
+            maxAge: 0,
+            redirect: false,
+            setHeaders: (res, path, stat) => {
+                // Set CORS headers for local development
+                res.set('Access-Control-Allow-Origin', '*');
+                res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+                res.set('Access-Control-Allow-Headers', 'Content-Type');
+            }
+        }))
+
+        // Custom handler for special endpoints
+        expressApp.use((req, res, next) => {
+            if (req.path.startsWith('/__htmlserve_')) {
+                return next()
+            }
+            
+            // If we reach here, the static handler didn't find the file
+            res.status(404).send(`File not found: ${req.path}`)
+        })
 
         // Read and inject close script
-        const htmlContent = fs.readFileSync(absPath, "utf8");
+        const htmlContent = fs.readFileSync(absPath, "utf8")
         const injected = htmlContent.replace(
             "</body>",
             `<script>
@@ -123,96 +151,98 @@ async function serveAndOpen(filePath) {
               // Page loaded notification
               fetch('/__htmlserve_loaded__', { method: 'POST' }).catch(() => {});
             </script></body>`
-        );
+        )
 
         // Serve HTML file
         expressApp.get(`/${filename}`, (req, res) => {
-            res.setHeader("Content-Type", "text/html");
-            res.send(injected);
-        });
+            res.setHeader("Content-Type", "text/html")
+            res.send(injected)
+        })
 
         // Handle page close
         expressApp.post("/__htmlserve_unload__", (req, res) => {
-            console.log("[HTMLServe] Page closed, shutting down server...");
-            res.sendStatus(200);
+            console.log("[HTMLServe] Page closed, shutting down server...")
+            res.sendStatus(200)
             setTimeout(() => {
                 if (server) {
                     server.close(() => {
-                        console.log("[HTMLServe] Server closed.");
-                        process.exit(0);
-                    });
+                        console.log("[HTMLServe] Server closed.")
+                        process.exit(0)
+                    })
                 }
-            }, 100);
-        });
+            }, 100)
+        })
 
         // Heartbeat detection
-        let lastHeartbeat = Date.now();
+        let lastHeartbeat = Date.now()
+        let pageLoaded = false
         expressApp.post("/__htmlserve_heartbeat__", (req, res) => {
-            lastHeartbeat = Date.now();
-            res.sendStatus(200);
-        });
+            lastHeartbeat = Date.now()
+            res.sendStatus(200)
+        })
 
         // Page loaded notification
         expressApp.post("/__htmlserve_loaded__", (req, res) => {
-            console.log("[HTMLServe] Page loaded successfully");
-            res.sendStatus(200);
-        });
+            console.log("[HTMLServe] Page loaded successfully")
+            pageLoaded = true
+            lastHeartbeat = Date.now()
+            res.sendStatus(200)
+        })
 
-        // Heartbeat timeout detection - if no heartbeat for 15 seconds, consider page closed
+        // Heartbeat timeout detection - only start after page is loaded
         const heartbeatTimeout = setInterval(() => {
-            if (Date.now() - lastHeartbeat > 15000) {
-                console.log("[HTMLServe] Heartbeat timeout, shutting down server...");
-                clearInterval(heartbeatTimeout);
+            if (pageLoaded && Date.now() - lastHeartbeat > 300000) {
+                console.log("[HTMLServe] Heartbeat timeout, shutting down server...")
+                clearInterval(heartbeatTimeout)
                 if (server) {
                     server.close(() => {
-                        console.log("[HTMLServe] Server closed due to heartbeat timeout.");
-                        process.exit(0);
-                    });
+                        console.log("[HTMLServe] Server closed due to heartbeat timeout.")
+                        process.exit(0)
+                    })
                 }
             }
-        }, 5000);
+        }, 5000)
 
         // Start server
         server = expressApp.listen(port, async () => {
-            const url = `http://localhost:${port}/${filename}`;
-            console.log(`[HTMLServe] 🚀 Serving ${filename} at ${url}`);
+            const url = `http://localhost:${port}/${filename}`
+            console.log(`[HTMLServe] 🚀 Serving ${filename} at ${url}`)
 
             // Open browser using native macOS open command
             exec(`open "${url}"`, (error) => {
                 if (error) {
-                    console.log(`[HTMLServe] Please open ${url} in your browser manually`);
-                    console.error(`[HTMLServe] Failed to auto-open browser: ${error.message}`);
+                    console.log(`[HTMLServe] Please open ${url} in your browser manually`)
+                    console.error(`[HTMLServe] Failed to auto-open browser: ${error.message}`)
                 } else {
-                    console.log(`[HTMLServe] Browser opened successfully`);
+                    console.log(`[HTMLServe] Browser opened successfully`)
                 }
-            });
-        });
+            })
+        })
 
         // Handle process exit
-        process.on('SIGINT', () => {
-            console.log('\n[HTMLServe] Received SIGINT, shutting down gracefully...');
+        process.on("SIGINT", () => {
+            console.log("\n[HTMLServe] Received SIGINT, shutting down gracefully...")
             if (server) {
                 server.close(() => {
-                    console.log('[HTMLServe] Server closed.');
-                    process.exit(0);
-                });
+                    console.log("[HTMLServe] Server closed.")
+                    process.exit(0)
+                })
             } else {
-                process.exit(0);
+                process.exit(0)
             }
-        });
+        })
 
-        process.on('SIGTERM', () => {
-            console.log('\n[HTMLServe] Received SIGTERM, shutting down gracefully...');
+        process.on("SIGTERM", () => {
+            console.log("\n[HTMLServe] Received SIGTERM, shutting down gracefully...")
             if (server) {
                 server.close(() => {
-                    console.log('[HTMLServe] Server closed.');
-                    process.exit(0);
-                });
+                    console.log("[HTMLServe] Server closed.")
+                    process.exit(0)
+                })
             } else {
-                process.exit(0);
+                process.exit(0)
             }
-        });
-
+        })
     } catch (error) {
         console.error("[HTMLServe] Error:", error.message);
         process.exit(1);

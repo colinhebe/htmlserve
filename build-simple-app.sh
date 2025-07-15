@@ -29,7 +29,7 @@ cp dist/htmlserve "$APP_BUNDLE/Contents/Resources/htmlserve"
 chmod +x "$APP_BUNDLE/Contents/Resources/htmlserve"
 
 # Copy icon and update Info.plist
-echo "🎨 Setting up custom icon..."
+echo "🎨 Setting up custom icon and permissions..."
 if [ -f "assets/icon.icns" ]; then
     cp assets/icon.icns "$APP_BUNDLE/Contents/Resources/"
     # Update Info.plist to use custom icon
@@ -42,6 +42,32 @@ elif [ -f "assets/htmlserve-icon.png" ]; then
     echo "✅ Icon set to: icon.png"
 else
     echo "⚠️  No custom icon found, using default droplet icon"
+fi
+
+# Add enhanced permissions for file access
+echo "🔐 Adding enhanced file access permissions..."
+/usr/libexec/PlistBuddy -c "Add :NSFileProviderDomainUsageDescription string 'HTMLServe needs access to serve local files from any location.'" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :NSDocumentsFolderUsageDescription string 'HTMLServe needs access to serve HTML files from your Documents folder.'" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :NSDownloadsFolderUsageDescription string 'HTMLServe needs access to serve HTML files from your Downloads folder.'" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :NSNetworkVolumesUsageDescription string 'HTMLServe needs access to serve files from network volumes.'" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :NSRemovableVolumesUsageDescription string 'HTMLServe needs access to serve files from removable volumes.'" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :NSDesktopFolderUsageDescription string 'HTMLServe needs access to serve files from your Desktop.'" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :NSSystemAdministrationUsageDescription string 'HTMLServe needs elevated permissions for accessing quarantined files.'" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null || true
+echo "✅ Enhanced permissions added"
+
+# Apply entitlements for broader file access
+echo "🔒 Applying enhanced entitlements..."
+if [ -f "entitlements.plist" ]; then
+    # Remove quarantine from the entitlements file first
+    xattr -d com.apple.quarantine entitlements.plist 2>/dev/null || true
+    
+    # Re-sign the app with entitlements to give it elevated privileges
+    codesign --force --deep --sign - --entitlements entitlements.plist "$APP_BUNDLE" 2>/dev/null || {
+        echo "⚠️  Code signing failed, but app should still work"
+    }
+    echo "✅ Enhanced entitlements applied"
+else
+    echo "⚠️  No entitlements.plist found, using default permissions"
 fi
 
 # Clean up temporary AppleScript app
